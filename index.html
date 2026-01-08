@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNP Bouncing Screensaver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0a;
+            color: white;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        #screensaver-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Adjusted width/height to fit the GNP logo aspect ratio */
+        #bouncing-icon {
+            position: absolute;
+            width: 180px;
+            height: 100px;
+            will-change: transform;
+            transition: filter 0.2s ease;
+            cursor: pointer;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #bouncing-icon:active {
+            transform: scale(0.9) !important;
+        }
+
+        /* GNP Typography: Bold, Italic, tight spacing like DVD */
+        .gnp-text {
+            font-size: 64px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -4px;
+            line-height: 0.8;
+            font-family: 'Arial Black', 'Arial', sans-serif;
+            text-transform: uppercase;
+            display: flex;
+        }
+
+        .char-g { color: #4285F4; } /* Google Blue */
+        .char-n { color: #34A853; } /* Google Green */
+        .char-p { color: #EA4335; } /* Google Red */
+
+        /* The "Disc" oval underneath - using Google Yellow */
+        .oval {
+            width: 100%;
+            height: 16px;
+            border: 5px solid #FBBC05; 
+            border-radius: 50%;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+
+        .stats {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            pointer-events: none;
+            opacity: 0.4;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            z-index: 5;
+        }
+
+        /* Fullscreen Prompt Overlay */
+        #fullscreen-prompt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #fullscreen-prompt p {
+            font-size: 1.2rem;
+            color: #aaa;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="fullscreen-prompt">
+        <p>Click anywhere to start & enter Full Screen</p>
+    </div>
+
+    <div id="screensaver-container">
+        <div id="bouncing-icon">
+            <div class="gnp-text">
+                <span class="char-g">G</span>
+                <span class="char-n">N</span>
+                <span class="char-p">P</span>
+            </div>
+            <div class="oval"></div>
+        </div>
+    </div>
+
+    <div class="stats">
+        Bounces: <span id="bounce-count">0</span><br>
+        Velocity: <span id="speed-val">3.0</span>px/frame
+    </div>
+
+    <script>
+        const icon = document.getElementById('bouncing-icon');
+        const bounceSpan = document.getElementById('bounce-count');
+        const speedSpan = document.getElementById('speed-val');
+        const prompt = document.getElementById('fullscreen-prompt');
+        const container = document.documentElement; // For full screen
+        
+        // Initial dimensions
+        let iconWidth = icon.offsetWidth;
+        let iconHeight = icon.offsetHeight;
+        let screenWidth = window.innerWidth;
+        let screenHeight = window.innerHeight;
+
+        // Random starting positions
+        let posX = Math.random() * (screenWidth - iconWidth);
+        let posY = Math.random() * (screenHeight - iconHeight);
+        
+        // Fixed starting velocity: 3px/frame (randomized direction)
+        let velX = (Math.random() > 0.5 ? 3 : -3);
+        let velY = (Math.random() > 0.5 ? 3 : -3);
+        
+        let bounceCount = 0;
+        let isRunning = false;
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            }
+        }
+
+        // Start the screensaver and request full screen on first click
+        window.addEventListener('click', () => {
+            if (!isRunning) {
+                isRunning = true;
+                prompt.style.opacity = '0';
+                setTimeout(() => prompt.remove(), 500);
+                toggleFullScreen();
+                update();
+            }
+        }, { once: false }); // Allow subsequent clicks to toggle full screen if needed
+
+        function update() {
+            if (!isRunning) return;
+
+            // Update boundaries in case of resize or late rendering
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+            iconWidth = icon.offsetWidth;
+            iconHeight = icon.offsetHeight;
+
+            posX += velX;
+            posY += velY;
+
+            let hit = false;
+
+            // X-axis collision
+            if (posX <= 0) {
+                posX = 0;
+                velX = -velX;
+                hit = true;
+            } else if (posX + iconWidth >= screenWidth) {
+                posX = screenWidth - iconWidth;
+                velX = -velX;
+                hit = true;
+            }
+
+            // Y-axis collision
+            if (posY <= 0) {
+                posY = 0;
+                velY = -velY;
+                hit = true;
+            } else if (posY + iconHeight >= screenHeight) {
+                posY = screenHeight - iconHeight;
+                velY = -velY;
+                hit = true;
+            }
+
+            if (hit) {
+                bounceCount++;
+                bounceSpan.textContent = bounceCount;
+                
+                // Flash effect on bounce
+                icon.style.filter = 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.6)) brightness(1.4)';
+                setTimeout(() => {
+                    icon.style.filter = 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.1)) brightness(1)';
+                }, 150);
+            }
+
+            // Apply movement
+            icon.style.transform = `translate(${posX}px, ${posY}px)`;
+
+            requestAnimationFrame(update);
+        }
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+            if (posX + iconWidth > screenWidth) posX = screenWidth - iconWidth;
+            if (posY + iconHeight > screenHeight) posY = screenHeight - iconHeight;
+        });
+
+        // Speed control on click (also triggers/re-triggers full screen check)
+        icon.addEventListener('click', (e) => {
+            e.stopPropagation(); // Don't trigger the window-level start logic
+            toggleFullScreen();
+            
+            velX *= 1.15;
+            velY *= 1.15;
+            
+            // Limit speed so it doesn't phase through walls
+            const maxSpeed = 30;
+            if (Math.abs(velX) > maxSpeed) {
+                velX = velX > 0 ? 3 : -3;
+                velY = velY > 0 ? 3 : -3;
+            }
+            
+            speedSpan.textContent = Math.abs(velX).toFixed(1);
+        });
+    </script>
+</body>
+</html>
