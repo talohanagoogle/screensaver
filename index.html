@@ -80,36 +80,9 @@
             letter-spacing: 0.1em;
             z-index: 5;
         }
-
-        /* Fullscreen Prompt Overlay */
-        #fullscreen-prompt {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            cursor: pointer;
-            text-align: center;
-            transition: opacity 0.5s ease;
-        }
-
-        #fullscreen-prompt p {
-            font-size: 1.2rem;
-            color: #aaa;
-            letter-spacing: 0.05em;
-        }
     </style>
 </head>
 <body>
-
-    <div id="fullscreen-prompt">
-        <p>Click anywhere to start & enter Full Screen</p>
-    </div>
 
     <div id="screensaver-container">
         <div id="bouncing-icon">
@@ -131,7 +104,6 @@
         const icon = document.getElementById('bouncing-icon');
         const bounceSpan = document.getElementById('bounce-count');
         const speedSpan = document.getElementById('speed-val');
-        const prompt = document.getElementById('fullscreen-prompt');
         const container = document.documentElement; // For full screen
         
         // Initial dimensions
@@ -149,30 +121,18 @@
         let velY = (Math.random() > 0.5 ? 3 : -3);
         
         let bounceCount = 0;
-        let isRunning = false;
 
         function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 container.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                    // Browsers block automatic fullscreen without a user gesture.
+                    // This will fail silently on page load but work when the user clicks the logo.
+                    console.log(`Full-screen request deferred until user interaction.`);
                 });
             }
         }
 
-        // Start the screensaver and request full screen on first click
-        window.addEventListener('click', () => {
-            if (!isRunning) {
-                isRunning = true;
-                prompt.style.opacity = '0';
-                setTimeout(() => prompt.remove(), 500);
-                toggleFullScreen();
-                update();
-            }
-        }, { once: false }); // Allow subsequent clicks to toggle full screen if needed
-
         function update() {
-            if (!isRunning) return;
-
             // Update boundaries in case of resize or late rendering
             screenWidth = window.innerWidth;
             screenHeight = window.innerHeight;
@@ -231,15 +191,21 @@
             if (posY + iconHeight > screenHeight) posY = screenHeight - iconHeight;
         });
 
-        // Speed control on click (also triggers/re-triggers full screen check)
+        // Start automatically on load
+        window.onload = () => {
+            update();
+            // Attempt fullscreen (will likely be blocked by browser until a click occurs)
+            toggleFullScreen();
+        };
+
+        // Speed control on click (also triggers full screen since it's a user gesture)
         icon.addEventListener('click', (e) => {
-            e.stopPropagation(); // Don't trigger the window-level start logic
             toggleFullScreen();
             
             velX *= 1.15;
             velY *= 1.15;
             
-            // Limit speed so it doesn't phase through walls
+            // Limit speed
             const maxSpeed = 30;
             if (Math.abs(velX) > maxSpeed) {
                 velX = velX > 0 ? 3 : -3;
